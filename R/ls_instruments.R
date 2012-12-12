@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: ls_instruments.R 1019 2012-05-06 15:15:05Z gsee $
+# $Id: ls_instruments.R 1209 2012-10-03 22:16:35Z gsee $
 #
 ###############################################################################
 
@@ -555,12 +555,16 @@ rm_currencies <- function(x) {
 
 #' @export
 #' @rdname ls_instruments
-rm_exchange_rates <- rm_FX <- function(x) {
+rm_exchange_rates <- function(x) {
     if (missing(x)) {
         x <- ls_exchange_rates()
     }
     rm(list=x[x %in% ls_exchange_rates()], pos=FinancialInstrument:::.instrument)
 }
+
+#' @export
+#' @rdname ls_instruments
+rm_FX <- rm_exchange_rates
 
 #' @export
 #' @rdname ls_instruments

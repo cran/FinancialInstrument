@@ -9,10 +9,10 @@ Author: Peter Carl, Dirk Eddelbuettel, Jeffrey Ryan, Joshua Ulrich,
         Brian G. Peterson, Garrett See
 Description: Infrastructure for defining meta-data and relationships
         for financial instruments.
-Version: 1.0
+Version: 1.1
 URL: https://r-forge.r-project.org/projects/blotter/
-Date: $Date: 2012-08-23 10:22:16 -0500 (Thu, 23 Aug 2012) $
-Depends: R (>= 2.12.0), quantmod(>= 0.3-17), zoo(>= 1.7-5)
+Date: 2012-12-12
+Depends: R (>= 2.12.0), quantmod(>= 0.3-17), xts, zoo(>= 1.7-5)
 Suggests: foreach, XML
 Collate: 'buildHierarchy.R' 'buildSpread.R' 'build_symbols.R'
         'instrument.R' 'instrument.table.R' 'load.instruments.R'
@@ -26,6 +26,6 @@ Collate: 'buildHierarchy.R' 'buildSpread.R' 'build_symbols.R'
         'FindCommonInstrumentAttributes.R' 'Notionalize.R'
         'update_instruments.iShares.R'
         'update_instruments.morningstar.R' 'CompareInstrumentFiles.R'
-Packaged: 2012-08-23 15:23:16 UTC; garrett
+Packaged: 2012-12-12 20:00:25.186496 UTC; garrett
 Repository: CRAN
-Date/Publication: 2012-08-23 15:46:53
+Date/Publication: 2012-12-12 21:34:14

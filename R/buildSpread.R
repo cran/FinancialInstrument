@@ -230,6 +230,7 @@ buildBasket <- buildSpread
 #' #download data and plot the closing values of a spread in one line
 #' chartSeries(Cl(fn_SpreadBuilder(getSymbols(c("SPY","DIA")),auto.assign=FALSE)))
 #' }
+#' @import xts
 #' @export
 fn_SpreadBuilder <- function(prod1, prod2, ratio=1, currency='USD', from=NULL, 
     to=NULL, session_times=NULL, notional=TRUE,
@@ -305,6 +306,7 @@ fn_SpreadBuilder <- function(prod1, prod2, ratio=1, currency='USD', from=NULL,
             Data.2 <- do.call("getSymbols", c(Symbols=prod2, gS.args, dargs))
         }
     }
+
     
     if ( (all(has.Op(Data.1), has.Cl(Data.2)) && !(all(has.Op(Data.2), has.Cl(Data.2)))) || 
 	(is.BBO(Data.1) && !is.BBO(Data.2)) ||
@@ -511,6 +513,6 @@ formatSpreadPrice <- function(x,multiplier=1,tick_size=0.01) {
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: buildSpread.R 1087 2012-06-28 15:12:01Z gsee $
+# $Id: buildSpread.R 1137 2012-08-27 18:41:07Z gsee $
 #
 ###############################################################################

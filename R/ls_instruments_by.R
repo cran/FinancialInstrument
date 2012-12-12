@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: ls_instruments_by.R 1043 2012-06-09 18:14:28Z gsee $
+# $Id: ls_instruments_by.R 1145 2012-08-29 01:09:58Z gsee $
 #
 ###############################################################################
 
@@ -63,12 +63,22 @@ ls_instruments_by <- function (what, value, in.slot=NULL, pattern=NULL, match=TR
             if (
                 if (is.null(value)) { #ls_instruments_by('type',NULL) or ls_instruments_by('name',NULL,'src')
                     if (is.null(in.slot)) { #ls_instruments_by('type',NULL) -- all instruments that have a 'type' element
-                        if (!inherits(try(tmp_instr[[what]],silent=TRUE), 'try-error') && !is.null(tmp_instr[[what]])) {TRUE} else {FALSE}
-                    } else if (!inherits(try(tmp_instr[[in.slot]][[what]],silent=TRUE), 'try-error') && !is.null(tmp_instr[[in.slot]][[what]])) {TRUE} else {FALSE}
+                        if (!inherits(try(tmp_instr[[what]],silent=TRUE), 
+                                      'try-error') && 
+                            !is.na(tmp_instr[[what]]) && 
+                            !is.null(tmp_instr[[what]])) {TRUE} else {FALSE}
+                    } else if (!inherits(try(tmp_instr[[in.slot]][[what]],
+                                             silent=TRUE), 'try-error') && 
+                        !is.na(tmp_instr[[in.slot]][[what]]) && 
+                        !is.null(tmp_instr[[in.slot]][[what]])) {TRUE} else {FALSE}
                 } else if (is.null(in.slot)) {
-                    if (!is.null(tmp_instr[[what]]) && any(tmp_instr[[what]] == value) ) {TRUE} else {FALSE}
+                    if (!is.null(tmp_instr[[what]]) && 
+                        !is.na(tmp_instr[[what]]) && 
+                        any(tmp_instr[[what]] == value) ) {TRUE} else {FALSE}
                 } else { #!is.null(value) && !is.null(in.slot)
-                    if (!is.null(tmp_instr[[in.slot]][[what]]) && any(tmp_instr[[in.slot]][[what]] == value)) {TRUE} else {FALSE}
+                    if (!is.null(tmp_instr[[in.slot]][[what]]) && 
+                        !is.na(tmp_instr[[in.slot]][[what]]) && 
+                        any(tmp_instr[[in.slot]][[what]] == value)) {TRUE} else {FALSE}
                 }
             ) tmp_symbols <- c(tmp_symbols, symbol)
         }    

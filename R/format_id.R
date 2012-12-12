@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: format_id.R 1022 2012-05-11 02:31:18Z gsee $
+# $Id: format_id.R 1274 2012-12-05 18:08:45Z gsee $
 #
 ###############################################################################
 
@@ -264,6 +264,14 @@ sort_ids <- function(ids, ...) {
                     warning(paste(x, "has more than 1 value for expires.",
                                   "Only the first will be used."))
                     tmpexp <- tmpexp[[1L]]
+                }
+                # if there's a partial date in the "expires" attribute that indicates
+                # year and month, use the first day of that month as the expiration date
+                # Could use the expires() generic, but parsing it here seems safer.
+                if (nchar(tmpexp) == 6 && grepl("^[0-9]+$", tmpexp)) { #201209
+                    tmpexp <- paste(substr(tmpexp, 1, 4), substr(tmpexp, 5, 6), "01", sep="-")
+                } else if (grepl("^[0-9]{4}-|/[0-9]{2}$", tmpexp)) { #2012-09 or 2012/09
+                    tmpexp <- paste(substr(tmpexp, 1, 4), substr(tmpexp, 6, 7), "01", sep="-")
                 }
                 dtmpexp <- suppressWarnings(try(as.Date(tmpexp), silent=TRUE))
                 if (inherits(dtmpexp, "try-error") || is.na(dtmpexp) || !is.timeBased(dtmpexp)) {
