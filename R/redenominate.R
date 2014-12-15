@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: redenominate.R 994 2012-04-01 23:58:26Z gsee $
+# $Id: redenominate.R 1638 2014-10-08 03:43:16Z gsee $
 #
 ###############################################################################
 
@@ -168,7 +168,6 @@ buildRatio <- function(x,env=.GlobalEnv, silent=FALSE) {
             #return(x[, grep("Ask", colnames(x), ignore.case = TRUE)])
         stop("subscript out of bounds: no column name containing \"Ask\"")
     }
-    has.Mid <- quantmod:::has.Mid
     
     Mid <- #This should be exported from quantmod
     function (x) 
@@ -280,9 +279,10 @@ buildRatio <- function(x,env=.GlobalEnv, silent=FALSE) {
 #'
 #' Redenominate (change the base of) an instrument
 #'
-#' If \code{x} is the name of an instrument, old_base is not required 
-#' and will become whatever is in the currency slot of the instrument.  
-#' Otherwise, old_base must be provided.
+#' If \code{old_base} is not provided, \code{x} must be the name of an 
+#' instrument (or an object with the name of a defined instrument) so that the
+#' currency attribute of the instrument can be used.  Otherwise, \code{old_base}
+#' must be provided.
 #'
 #' If you want to convert to JPY something that is denominated in EUR,
 #' you must have data for the EURJPY (or JPYEUR) exchange rate. If you don't have
@@ -327,7 +327,7 @@ redenominate <- function(x, new_base='USD', old_base=NULL, EOD_time='15:00:00', 
             if (is.null(old_base)) stop(paste("If old_base is not provided, ", Symbol, ' must be defined.', sep=""))
             mult <- 1        
         } else {
-            old_base <- instr$currency
+            if (is.null(old_base)) old_base <- instr$currency
             mult <- as.numeric(instr$multiplier)    
         }
         if (is.character(x)) x <- get(Symbol,pos=env)
@@ -343,10 +343,8 @@ redenominate <- function(x, new_base='USD', old_base=NULL, EOD_time='15:00:00', 
     } else rate <- xts(rep(1L, nrow(x)), index(x))
     
     #!#---#!# Define function we'll need
-    has.Mid <- quantmod:::has.Mid
-    Mid <- #This should be exported from quantmod
-    function (x) 
-    {
+    #This should be exported from quantmod
+    Mid <- function (x) {
         if (has.Mid(x)) 
             return(x[,has.Mid(x,1)])            
             #return(x[, grep("Mid", colnames(x), ignore.case = TRUE)])

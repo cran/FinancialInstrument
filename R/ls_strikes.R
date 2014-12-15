@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: ls_strikes.R 899 2012-01-01 19:00:09Z gsee $
+# $Id: ls_strikes.R 1498 2013-08-25 00:26:39Z gsee $
 #
 ###############################################################################
 
@@ -33,10 +33,10 @@
 #' }
 #' @export
 ls_strikes <- function(pattern=NULL) {
-    symbols <- ls_options(pattern)
+    symbols <- ls_option_series(pattern, match=FALSE)
     tmp_symbols <- NULL
     for (symbol in symbols) {
-        tmp_instr <- try(get(symbol,pos=FinancialInstrument:::.instrument),silent=TRUE)
+        tmp_instr <- try(get(symbol,pos=.instrument),silent=TRUE)
         #if (is.instrument(tmp_instr))  
         if (!is.null(tmp_instr$strike)) 
             tmp_symbols <- c(tmp_symbols,tmp_instr$strike)

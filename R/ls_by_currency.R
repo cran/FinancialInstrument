@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: ls_by_currency.R 899 2012-01-01 19:00:09Z gsee $
+# $Id: ls_by_currency.R 1498 2013-08-25 00:26:39Z gsee $
 #
 ###############################################################################
 
@@ -81,7 +81,7 @@ ls_by_currency <- function(currency, pattern=NULL, match=TRUE,show.currencies=FA
         
     tmp_symbols <- NULL            
     for (symbol in symbols) {
-        tmp_instr <- try(get(symbol, pos = FinancialInstrument:::.instrument),silent=TRUE)
+        tmp_instr <- try(get(symbol, pos = .instrument),silent=TRUE)
         if (is.instrument(tmp_instr) && 
           tmp_instr$currency == currency ){    
             tmp_symbols <- c(tmp_symbols,symbol)
@@ -101,7 +101,7 @@ rm_by_currency <- function(x,currency,keep.currencies=TRUE) {
     if (missing(x)) {
         x <- ls_by_currency(currency,show.currencies=sc)
     } else x <- ls_by_currency(currency,pattern=x,show.currencies=sc)
-    rm(list=x,pos=FinancialInstrument:::.instrument)
+    rm(list=x,pos=.instrument)
 }
 
 #AUD GBP CAD EUR JPY CHF HKD SEK NZD

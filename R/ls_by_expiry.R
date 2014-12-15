@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: ls_by_expiry.R 899 2012-01-01 19:00:09Z gsee $
+# $Id: ls_by_expiry.R 1498 2013-08-25 00:26:39Z gsee $
 #
 ###############################################################################
 
@@ -61,7 +61,7 @@ ls_by_expiry <- function(expiry, pattern=NULL, match=TRUE) {
     expiry <- gsub("-", "", expiry)
     tmp_symbols <- NULL            
     for (symbol in symbols) {
-        tmp_instr <- try(get(symbol, pos = FinancialInstrument:::.instrument),silent=TRUE)
+        tmp_instr <- try(get(symbol, pos = .instrument),silent=TRUE)
         if (is.instrument(tmp_instr) ) {
             if ((!is.null(tmp_instr$expires) && any(gsub("-", "", tmp_instr$expires) == expiry)) ||
                 (!is.null(tmp_instr$expiry) && any(gsub("-", "", tmp_instr$expiry) == expiry)) ) {
@@ -78,7 +78,7 @@ rm_by_expiry <- function(x,expiry) {
     if (missing(x)) {
         x <- ls_by_expiry(expiry)
     } else x <- ls_by_expiry(expiry,pattern=x)
-    rm(list=x,pos=FinancialInstrument:::.instrument)
+    rm(list=x,pos=.instrument)
 }
 #rm_by_expiry(ls_options(),'20130119')
 

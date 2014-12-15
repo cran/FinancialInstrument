@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: format_id.R 1274 2012-12-05 18:08:45Z gsee $
+# $Id: format_id.R 1406 2013-03-03 16:14:56Z gsee $
 #
 ###############################################################################
 
@@ -283,7 +283,7 @@ sort_ids <- function(ids, ...) {
             }
         }
         pid <- parse_id(x, ...)
-        as.Date(paste(pid$year, pid$month, 1, sep=''), format="%Y%b%d")
+        as.Date(paste(pid$year, MC2N(pid$month), 1, sep = "-"), format = "%Y-%m-%d")
     }
     out1 <- names(sort(sapply(ids,f, ...)))
     out2 <- sort(ids[!(ids %in% out1)])

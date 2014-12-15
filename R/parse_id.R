@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: parse_id.R 1090 2012-06-29 20:49:28Z gsee $
+# $Id: parse_id.R 1655 2014-11-23 22:53:26Z gsee $
 #
 ###############################################################################
 
@@ -452,9 +452,8 @@ parse_suffix <- function(x, silent=TRUE) {
 
 #' id.list class print method
 #' 
-#' @method print id.list
-#' @S3method print id.list
 #' @keywords internal
+#' @export
 print.id.list <- function(x, ...) {
   str(x, comp.str="", give.length=FALSE, give.attr=FALSE)
   invisible(x)
@@ -462,9 +461,8 @@ print.id.list <- function(x, ...) {
 
 #' suffix.list class print method
 #' 
-#' @method print suffix.list
-#' @S3method print suffix.list
 #' @keywords internal
+#' @export
 print.suffix.list <- function(x, ...) {
   str(x, comp.str="", give.length=FALSE, give.attr=FALSE)
   invisible(x)

@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: ls_instruments_by.R 1145 2012-08-29 01:09:58Z gsee $
+# $Id: ls_instruments_by.R 1498 2013-08-25 00:26:39Z gsee $
 #
 ###############################################################################
 
@@ -57,7 +57,7 @@ ls_instruments_by <- function (what, value, in.slot=NULL, pattern=NULL, match=TR
     if (missing(value)) value <- NULL
     tmp_symbols <- NULL 
     for (symbol in symbols) {
-        tmp_instr <- try(get(symbol, pos = FinancialInstrument:::.instrument),silent=TRUE)
+        tmp_instr <- try(get(symbol, pos = .instrument),silent=TRUE)
         #TODO: clean this up
         if (is.instrument(tmp_instr)) {
             if (

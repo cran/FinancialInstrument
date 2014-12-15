@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: instrument.R 1193 2012-09-21 02:12:27Z gsee $
+# $Id: instrument.R 1655 2014-11-23 22:53:26Z gsee $
 #
 ###############################################################################
 
@@ -104,8 +104,11 @@ is.currency.name <- function( x ) {
 #' \code{instrument} prior to further processing (and presumably assignment) or 
 #' to test your parameters before assignment.
 #' 
+#' If \code{overwrite=FALSE} is used, an error will be thrown if any 
+#' \code{primary_id}s are already in use.
+#' 
 #' As of version 0.10.0, the .instrument environment is located at the top level
-#' of the package. i.e. \code{FinancialInstrument:::.instrument}.
+#' of the package. i.e. \code{.instrument}.
 #' 
 #' \code{future} and \code{option} are used to define the contract specs of a 
 #' series of instruments.  The \code{primary_id} for these can begin with 1 or 
@@ -135,6 +138,9 @@ is.currency.name <- function( x ) {
 #' @param assign_i TRUE/FALSE. Should the instrument be assigned to the 
 #'   \code{.instrument} environment?  Default is FALSE for \code{instrument}, 
 #'   TRUE for wrappers.
+#' @param overwrite TRUE/FALSE. Should existing instruments with the same
+#'   primary_id be overwritten? Default is TRUE. If FALSE, an error will be 
+#'   thrown and the instrument will not be created.
 #' @aliases 
 #' stock
 #' bond
@@ -151,8 +157,9 @@ is.currency.name <- function( x ) {
 #' \code{\link{spread}},
 #' \code{\link{load.instruments}}
 #' @export
-instrument<-function(primary_id , ..., currency , multiplier , tick_size=NULL, 
-                     identifiers = NULL, type=NULL, assign_i=FALSE ){
+instrument <- function(primary_id , ..., currency , multiplier , tick_size=NULL, 
+                     identifiers = NULL, type=NULL, assign_i=FALSE, 
+                     overwrite=TRUE) {
   if(is.null(primary_id)) {
       stop("you must specify a primary_id for the instrument")
   }
@@ -198,7 +205,6 @@ instrument<-function(primary_id , ..., currency , multiplier , tick_size=NULL,
   identifiers <- c(identifiers, arg[pos_arg])
   arg[pos_arg] <- NULL
   
-  
   ## TODO note that multiplier could be a time series, probably add code here to check
   if(!is.numeric(multiplier) || length(multiplier) > 1) {
       stop("multiplier must be a single number")
@@ -209,13 +215,21 @@ instrument<-function(primary_id , ..., currency , multiplier , tick_size=NULL,
   if(is.null(type)) {
       tclass="instrument" 
   } else tclass = unique(c(type,"instrument"))
-
-  if (is.currency.name(primary_id)) {
+  
+  if (is.currency.name(primary_id) && 
+          !inherits(getInstrument(primary_id, type="currency"), 
+                    "exchange_rate")) {
       oid <- primary_id
       primary_id <- tail(make.names(c(ls_instruments(), oid), unique=TRUE), 1)
       warning(paste(oid, "is the name of a currency. Using", primary_id, 
                     "for the primary_id of this", type))
       identifiers <- c(identifiers, ticker=oid)
+  } else if ((primary_id %in% ls_instruments()) && !overwrite && 
+                 isTRUE(assign_i)) {
+      # primary_id already exists and we are not overwriting
+	  stop(paste("an instrument with primary_id", primary_id, 
+                 "already exists in the .instrument environment.",
+                 "Set overwrite=TRUE to overwrite."))
   }
   tmpinstr <- list(primary_id = primary_id,
                    currency = currency,
@@ -230,7 +244,7 @@ instrument<-function(primary_id , ..., currency , multiplier , tick_size=NULL,
   
   if(assign_i)  {
       assign(primary_id, tmpinstr, 
-             envir=as.environment(FinancialInstrument:::.instrument) )
+             envir=as.environment(.instrument) )
       return(primary_id)  
   } else return(tmpinstr) 
 }
@@ -238,11 +252,24 @@ instrument<-function(primary_id , ..., currency , multiplier , tick_size=NULL,
 #' @export
 #' @rdname instrument
 stock <- function(primary_id , currency=NULL , multiplier=1 , tick_size=.01, 
-                  identifiers = NULL, assign_i=TRUE, ...){
+                  identifiers = NULL, assign_i=TRUE, overwrite=TRUE, ...){
     if (is.null(currency)) stop ("'currency' is a required argument")
-    if (length(primary_id) > 1) return(unname(sapply(primary_id, stock, 
-        currency=currency, multiplier=multiplier, tick_size=tick_size, 
-        identifiers=identifiers, ...=...)))
+    if (!isTRUE(overwrite) && isTRUE(assign_i) &&
+        any(in.use <- primary_id %in% (li <- ls_instruments()))) {
+        stop(paste(paste("In stock(...) : ",
+                          "overwrite is FALSE and primary_id", 
+                          if (sum(in.use) > 1) "s are" else " is", 
+                          " already in use:\n", sep=""),
+                   paste(intersect(primary_id, li), collapse=", ")), 
+             call.=FALSE)
+    }
+    if (length(primary_id) > 1) {
+        out <- sapply(primary_id, stock, currency=currency, 
+                      multiplier=multiplier, tick_size=tick_size, 
+                      identifiers=identifiers, assign_i=assign_i,
+                      ...=..., simplify=assign_i)
+        return(if (assign_i) unname(out) else out)
+    }
     instrument(primary_id=primary_id, currency=currency, multiplier=multiplier, 
                tick_size=tick_size, identifiers = identifiers, ..., 
                type="stock", assign_i=assign_i)
@@ -251,11 +278,24 @@ stock <- function(primary_id , currency=NULL , multiplier=1 , tick_size=.01,
 #' @export
 #' @rdname instrument
 fund <- function(primary_id , currency=NULL , multiplier=1 , tick_size=.01, 
-                 identifiers = NULL, assign_i=TRUE, ...){
+                 identifiers = NULL, assign_i=TRUE, overwrite=TRUE, ...){
     if (is.null(currency)) stop ("'currency' is a required argument")
-    if (length(primary_id) > 1) return(unname(sapply(primary_id, fund,
-        currency=currency, multiplier=multiplier, tick_size=tick_size, 
-        identifiers=identifiers, ...=...)))
+    if (!isTRUE(overwrite) && isTRUE(assign_i) &&
+        any(in.use <- primary_id %in% (li <- ls_instruments()))) {
+        stop(paste(paste("In fund(...) : ",
+                          "overwrite is FALSE and primary_id", 
+                          if (sum(in.use) > 1) "s are" else " is", 
+                          " already in use:\n", sep=""),
+                   paste(intersect(primary_id, li), collapse=", ")), 
+             call.=FALSE)
+    }
+    if (length(primary_id) > 1) {
+        out <- sapply(primary_id, fund, currency=currency, 
+                      multiplier=multiplier, tick_size=tick_size, 
+                      identifiers=identifiers, assign_i=assign_i, ...=..., 
+                      simplify=assign_i)
+        return(if (assign_i) unname(out) else out)
+    }
     instrument(primary_id=primary_id, currency=currency, 
                multiplier=multiplier, tick_size=tick_size, 
                identifiers=identifiers, ..., type="fund", assign_i=assign_i)
@@ -264,9 +304,14 @@ fund <- function(primary_id , currency=NULL , multiplier=1 , tick_size=.01,
 #' @export
 #' @rdname instrument
 future <- function(primary_id , currency , multiplier , tick_size=NULL, 
-                   identifiers = NULL, assign_i=TRUE, ..., underlying_id=NULL){
+                   identifiers = NULL, assign_i=TRUE, overwrite=TRUE, ..., 
+                   underlying_id=NULL){
     if(missing(primary_id)) primary_id <- paste("..",underlying_id,sep="")
     if (length(primary_id) > 1) stop('primary_id must be of length 1')
+    if (!isTRUE(overwrite) && assign_i==TRUE && 
+            primary_id %in% ls_instruments()) {
+        stop(sQuote(primary_id), " already in use and overwrite=FALSE")
+    }
     if (missing(currency) && !is.null(underlying_id)) {
         uinstr <- getInstrument(underlying_id,silent=TRUE)
         if (is.instrument(uinstr)) {
@@ -276,7 +321,7 @@ future <- function(primary_id , currency , multiplier , tick_size=NULL,
     if(is.null(underlying_id)) {
         warning("underlying_id should only be NULL for cash-settled futures")
     } else {
-        if(!exists(underlying_id, where=FinancialInstrument:::.instrument,
+        if(!exists(underlying_id, where=.instrument,
                    inherits=TRUE)) {
             warning("underlying_id not found") # assumes that we know where to look
         }
@@ -358,6 +403,9 @@ future <- function(primary_id , currency , multiplier , tick_size=NULL,
 future_series <- function(primary_id, root_id=NULL, suffix_id=NULL, 
                           first_traded=NULL, expires=NULL, identifiers = NULL, 
                           assign_i=TRUE, overwrite=TRUE, ...){
+  # if overwrite==FALSE and assign_i==TRUE, we'll need to know what instruments
+  # are already defined.  Don't bother doing this if we're overwriting anyway
+  if (!isTRUE(overwrite) && isTRUE(assign_i)) li <- ls_instruments()
   if (missing(primary_id)) {
       if (all(is.null(c(root_id,suffix_id)))) {
           stop(paste('must provide either a primary_id or',
@@ -378,10 +426,20 @@ future_series <- function(primary_id, root_id=NULL, suffix_id=NULL,
           stop(paste("'first_traded' and 'expires' must be NULL",
                      "if calling with multiple primary_ids"))
       }
-      return(unname(sapply(primary_id, future_series,
-          root_id=root_id, suffix_id=suffix_id, first_traded=first_traded, 
-          expires=expires, identifiers = identifiers, assign_i=assign_i, 
-          ...=...)))
+      if (!isTRUE(overwrite) && isTRUE(assign_i) &&
+          any(in.use <- primary_id %in% li)) {
+          stop(paste(paste("In future_series(...) : ",
+                            "overwrite is FALSE and primary_id", 
+                            if (sum(in.use) > 1) "s are" else " is", 
+                            " already in use:\n", sep=""),
+                   paste(intersect(primary_id, li), collapse=", ")), 
+               call.=FALSE)
+      }
+      out <- sapply(primary_id, future_series, root_id=root_id, 
+                    suffix_id=suffix_id, first_traded=first_traded, 
+                    expires=expires, identifiers = identifiers, 
+                    assign_i=assign_i, ...=..., simplify=assign_i)
+      return(if (assign_i) unname(out) else out)
   } else if (is.null(root_id) && !is.null(suffix_id) && 
              parse_id(primary_id)$type == 'root') {
       #if we have primary_id, but primary_id looks like a root_id, and we have 
@@ -389,8 +447,10 @@ future_series <- function(primary_id, root_id=NULL, suffix_id=NULL,
       #need to replace primary_id
       root_id <- primary_id
       primary_id <- paste(root_id, suffix_id, sep="_")
-  }    
-
+  }
+  if (!isTRUE(overwrite) && isTRUE(assign_i) && primary_id %in% li) {
+      stop(sQuote(primary_id), " already in use and overwrite=FALSE")
+  }
   pid <- parse_id(primary_id)
   if (is.null(root_id)) root_id <- pid$root
   if (is.null(suffix_id)) suffix_id <- pid$suffix
@@ -418,7 +478,7 @@ future_series <- function(primary_id, root_id=NULL, suffix_id=NULL,
                                                first_traded))
           temp_series$expires<-unique(c(temp_series$expires,expires))
           assign(primary_id, temp_series, 
-                 envir=as.environment(FinancialInstrument:::.instrument))
+                 envir=as.environment(.instrument))
           return(primary_id)
       } else warning("No contract found to update. A new one will be created.")
   }
@@ -462,19 +522,24 @@ future_series <- function(primary_id, root_id=NULL, suffix_id=NULL,
 #' @export
 #' @rdname instrument
 option <- function(primary_id , currency , multiplier , tick_size=NULL, 
-                   identifiers = NULL, assign_i=TRUE, ..., underlying_id=NULL){
+                   identifiers = NULL, assign_i=TRUE, overwrite=TRUE,
+                   ..., underlying_id=NULL){
   if (missing(primary_id)) primary_id <- paste(".",underlying_id,sep="")
   if (length(primary_id) > 1) stop("'primary_id' must be of length 1")
+  if (!isTRUE(overwrite) && assign_i==TRUE && 
+          primary_id %in% ls_instruments()) {
+      stop(sQuote(primary_id), " already in use and overwrite=FALSE")
+  }
   if (missing(currency) && !is.null(underlying_id)) {
         uinstr <- getInstrument(underlying_id,silent=TRUE)
         if (is.instrument(uinstr)) {
             currency <- uinstr$currency
         } else stop("'currency' is a required argument")
-    }
+  }
   if(is.null(underlying_id)) {
       warning("underlying_id should only be NULL for cash-settled options")
   } else {
-      if(!exists(underlying_id, where=FinancialInstrument:::.instrument,
+      if(!exists(underlying_id, where=.instrument,
                  inherits=TRUE)) {
           warning("underlying_id not found") # assumes that we know where to look
       }
@@ -496,6 +561,7 @@ option_series <- function(primary_id , root_id = NULL, suffix_id = NULL,
                           first_traded=NULL, expires=NULL, 
                           callput=c("call","put"), strike=NULL, 
                           identifiers=NULL, assign_i=TRUE, overwrite=TRUE, ...){
+    if (!isTRUE(overwrite) && isTRUE(assign_i)) li <- ls_instruments()
     if (missing(primary_id) ) {
         if (all(is.null(c(root_id,suffix_id)))) {
             stop(paste('must provide either a primary_id or',
@@ -525,14 +591,25 @@ option_series <- function(primary_id , root_id = NULL, suffix_id = NULL,
             primary_id <- paste(gsub("\\.","",root_id), suffix_id, sep="_")
         }
     } else if (length(primary_id) > 1) {
+       if (!isTRUE(overwrite) && isTRUE(assign_i) && 
+               any(in.use <- primary_id %in% li)) {
+          stop(paste(paste("In option_series(...) : ",
+                            "overwrite is FALSE and primary_id", 
+                            if (sum(in.use) > 1) "s are" else " is", 
+                            " already in use:\n", sep=""),
+                     paste(intersect(primary_id, li), collapse=", ")), 
+               call.=FALSE)
+      }
       if (!is.null(expires) || !is.null(first_traded)) {
           stop(paste("'first_traded' and 'expires' must be NULL",
                      "if calling with multiple primary_ids"))
       }
-      return(unname(sapply(primary_id, option_series, 
-          root_id=root_id, suffix_id=suffix_id, first_traded=first_traded,
-          expires=expires, callput=callput, strike=strike, 
-          identifiers=identifiers, assign_i=assign_i, ...=...)))
+      out <- sapply(primary_id, option_series, root_id=root_id, 
+                    suffix_id=suffix_id, first_traded=first_traded, 
+                    expires=expires, callput=callput, strike=strike, 
+                    identifiers=identifiers, assign_i=assign_i, ...=..., 
+                    simplify=assign_i)
+      return(if (assign_i) unname(out) else out)
     } else if (is.null(root_id) && !is.null(suffix_id) && 
                parse_id(primary_id)$type == 'root') {
           #if we have primary_id, but primary_id looks like a root_id, and we 
@@ -540,7 +617,10 @@ option_series <- function(primary_id , root_id = NULL, suffix_id = NULL,
           #root_id and we need to replace primary_id
           root_id <- primary_id
           primary_id <- paste(root_id, suffix_id, sep="_")
-    }    
+    }
+    if (!isTRUE(overwrite) && isTRUE(assign_i) && primary_id %in% li) {
+        stop(sQuote(primary_id), " already in use and overwrite=FALSE")
+    }
     pid <- parse_id(primary_id)
     if (is.null(root_id)) root_id <- pid$root
     if (is.null(suffix_id)) suffix_id <- pid$suffix
@@ -576,7 +656,7 @@ option_series <- function(primary_id , root_id = NULL, suffix_id = NULL,
                                                  first_traded))
             temp_series$expires<-unique(c(temp_series$expires,expires))
             assign(primary_id, temp_series, 
-                   envir=as.environment(FinancialInstrument:::.instrument))
+                   envir=as.environment(.instrument))
             return(primary_id)
         } else {
             warning("No contract found to update.  A new one will be created.")
@@ -624,6 +704,7 @@ option_series <- function(primary_id , root_id = NULL, suffix_id = NULL,
 #' @param first_traded first date that contracts are tradeable. Probably not 
 #'   applicable if defining several chains.
 #' @param tick_size minimum price change of options.
+#' @param overwrite if an instrument already exists, should it be overwritten?
 #' @return Called for side-effect. The instrument that is created and stored 
 #'   will inherit option_series, option, and instrument classes. 
 #' @references Yahoo \url{http://finance.yahoo.com}
@@ -640,13 +721,8 @@ option_series <- function(primary_id , root_id = NULL, suffix_id = NULL,
 #' }
 #' @export
 option_series.yahoo <- function(symbol, Exp, currency="USD", multiplier=100, 
-                                first_traded=NULL, tick_size=NULL) {
+                                first_traded=NULL, tick_size=NULL, overwrite=TRUE) {
     #FIXME: identifiers?
-    
-    if (!("package:quantmod" %in% search() || 
-          require("quantmod",quietly=TRUE))) {
-        stop("Please install quantmod before using this function.")
-    }    
 
     opts <- getOptionChain(Symbols=symbol,Exp=Exp, src="yahoo")
 
@@ -657,19 +733,36 @@ option_series.yahoo <- function(symbol, Exp, currency="USD", multiplier=100,
         optnames <- unname(do.call(c, led)) #FIXME: Is this a reasonable way to get rownames?
     } else optnames <- locals(opts) #c(rownames(opts$calls),rownames(opts$puts))
 
-    idout <- NULL
-    for (r in optnames) {
-        root_id <- symbol
-        si <- gsub(symbol,"",r) #suffix_id
-        expiry <- substr(si,1,6)
-        right <- substr(si,7,7)
-        strike <- as.numeric(substr(si,8,15))/1000
-#        local <- paste(symbol, si, sep="   ")      
-        clean.si <- paste(expiry,right,strike,sep="")
-        primary_id <- paste(symbol, "_", clean.si, sep="")
 
+    CleanID <- function(x, symbol) {
+        si <- gsub(symbol, "", x) #suffix_id        
+        out <- list(root_id = symbol,
+                    expiry = substr(si, 1, 6),
+                    right = substr(si, 7, 7),
+                    strike = as.numeric(substr(si, 8, 15))/1000)
+        clean.si <- with(out, paste(expiry, right, strike, sep=""))
+        c(out, list(clean.si=clean.si, 
+                    primary_id = paste(symbol, "_", clean.si, sep="")))
+    }
+
+    id.list <- lapply(optnames, CleanID, symbol)
+    
+    if (!isTRUE(overwrite)) {
+        new.ids <- unname((u <- unlist(id.list))[grep("primary_id", names(u))])
+        if (any(in.use <- new.ids %in% (li <- ls_instruments()))) {
+            stop(paste(paste("In option_series.yahoo(...) : ",
+                              "overwrite is FALSE and primary_id", 
+                              if (sum(in.use) > 1) "s are" else " is", 
+                              " already in use:\n", sep=""),
+                       paste(intersect(new.ids, li), collapse=", ")), 
+                 call.=FALSE)
+        }
+    }
+    
+    idout <- NULL
+    for (ID in id.list) {
         #create currency if it doesn't exist #?? Any reason not to ??
-        tmpccy <- try(getInstrument(currency,silent=TRUE),silent=TRUE)
+        tmpccy <- try(getInstrument(currency, silent=TRUE), silent=TRUE)
         if (!inherits(tmpccy, "currency")) {
             warning(paste("Created currency", currency, 
                           "because it did not exist."))
@@ -679,34 +772,32 @@ option_series.yahoo <- function(symbol, Exp, currency="USD", multiplier=100,
         tmpInstr <- try(getInstrument(paste('.',symbol,sep=""), silent=TRUE),
                         silent=TRUE)
         if (!inherits(tmpInstr, "option")) {
-        warning(paste('Created option specs for root',
-                          paste('.', symbol, sep="")))
-        option(primary_id=paste('.',symbol,sep=""), currency=currency,
-            multiplier=multiplier, tick_size=tick_size, 
-            underlying_id=symbol)
+            warning(paste('Created option specs for root',
+                              paste('.', symbol, sep="")))
+            option(primary_id=paste('.',symbol,sep=""), currency=currency,
+                multiplier=multiplier, tick_size=tick_size, 
+                underlying_id=symbol)
         }
         #create specific option
-        tempseries = instrument(primary_id=primary_id, 
-                                suffix_id=clean.si, 
+        tempseries = instrument(primary_id=ID[["primary_id"]], 
+                                suffix_id=ID[["clean.si"]], 
                                 first_traded=first_traded, 
                                 currency=currency, 
                                 multiplier=multiplier, 
                                 tick_size=tick_size, 
                                 expires=as.Date(paste(paste('20', 
-                                                            substr(expiry,1,2),
+                                                            substr(ID[["expiry"]], 1, 2),
                                                             sep=""), 
-                                                      substr(expiry,3,4), 
-                                                      substr(expiry,5,6),
-                                                            sep="-")), 
-                                callput=switch(right, C="call", P="put"), #to be consistent with the other option_series function
-                                strike=strike, 
+                                                      substr(ID[["expiry"]], 3, 4), 
+                                                      substr(ID[["expiry"]], 5, 6),
+                                                      sep="-")), 
+                                callput=switch(ID[["right"]], C="call", P="put"), #to be consistent with the other option_series function
+                                strike=ID[["strike"]], 
                                 underlying_id=symbol, 
                                 type = c("option_series","option"), 
-                                defined.by='yahoo', assign_i=TRUE
+                                defined.by='yahoo', assign_i=TRUE, overwrite=overwrite
                                 )    
-#option_series(primary_id=primary_id, suffix_id=si, exires=expiry, currency=currency,
-#                        callput = switch(right,C='call',P='put'))   
-        idout <- c(idout, primary_id)    
+        idout <- c(idout, ID[["primary_id"]])
     }
     idout
 }
@@ -714,9 +805,21 @@ option_series.yahoo <- function(symbol, Exp, currency="USD", multiplier=100,
 #' @export
 #' @rdname instrument
 currency <- function(primary_id, identifiers = NULL, assign_i=TRUE, ...){
+    if (hasArg("overwrite")) {
+        if (!list(...)$overwrite && isTRUE(assign_i) &&
+            any(in.use <- primary_id %in% (li <- ls_instruments()))) {
+            stop(paste(paste("In currency(...) : ",
+                              "overwrite is FALSE and primary_id", 
+                              if (sum(in.use) > 1) "s are" else " is", 
+                              " already in use:\n", sep=""),
+                       paste(intersect(primary_id, li), collapse=", ")), 
+                call.=FALSE)
+        }
+    }
     if (length(primary_id) > 1) {
-        return(unname(sapply(primary_id, currency, 
-                             identifiers=identifiers, ...=...)))
+        out <- sapply(primary_id, currency, identifiers=identifiers, 
+                      assign_i=assign_i, ...=..., simplify=assign_i)
+        return(if (assign_i) unname(out) else out)
     }
     if (is.null(identifiers)) identifiers <- list()
     ccy <- try(getInstrument(primary_id,type='currency',silent=TRUE))
@@ -748,7 +851,7 @@ currency <- function(primary_id, identifiers = NULL, assign_i=TRUE, ...){
     class(ccy)<-c("currency","instrument")
     if (assign_i) {
         assign(primary_id, ccy, 
-               pos=as.environment(FinancialInstrument:::.instrument) )
+               pos=as.environment(.instrument) )
         return(primary_id)
     }
     ccy
@@ -779,12 +882,16 @@ currency <- function(primary_id, identifiers = NULL, assign_i=TRUE, ...){
 #'   stored for this instrument
 #' @param assign_i TRUE/FALSE. Should the instrument be assigned in the 
 #'   \code{.instrument} environment? (Default TRUE)
+#' @param overwrite \code{TRUE} by default.  If \code{FALSE}, an error will
+#'   be thrown if there is already an instrument defined with the same 
+#'   \code{primary_id}.
 #' @param ... any other passthru parameters
 #' @references http://financial-dictionary.thefreedictionary.com/Base+Currency
 #' @export
 exchange_rate <- function (primary_id = NULL, currency = NULL, 
                            counter_currency = NULL, tick_size=0.01, 
-                           identifiers = NULL, assign_i=TRUE, ...){
+                           identifiers = NULL, assign_i=TRUE, overwrite=TRUE, 
+                           ...){
   if (is.null(primary_id) && !is.null(currency) && !is.null(counter_currency)) {
     primary_id <- c(outer(counter_currency,currency,paste,sep=""))
     same.same <- function(x) substr(x,1,3) == substr(x,4,6)
@@ -794,17 +901,28 @@ exchange_rate <- function (primary_id = NULL, currency = NULL,
     stop(paste("Must provide either 'primary_id' or both",
                "'currency' and 'counter_currency'"))
   }
+  if (!isTRUE(overwrite) && isTRUE(assign_i) &&
+        any(in.use <- primary_id %in% (li <- ls_instruments()))) {
+        stop(paste(paste("In exchange_rate(...) : ",
+                          "overwrite is FALSE and primary_id", 
+                          if (sum(in.use) > 1) "s are" else " is", 
+                          " already in use:\n", sep=""),
+                   paste(intersect(primary_id, li), collapse=", ")), 
+             call.=FALSE)
+  }
+
   if (length(primary_id) > 1) {
-    return(unname(sapply(primary_id, exchange_rate, identifiers=identifiers, 
-                         ...=...)))
+    out <- sapply(primary_id, exchange_rate, identifiers=identifiers, 
+                         assign_i=assign_i, ...=..., simplify=assign_i)
+    return(if (assign_i) unname(out) else out)
   }
   if (is.null(currency)) currency <- substr(primary_id,4,6)
   if (is.null(counter_currency)) counter_currency <- substr(primary_id,1,3)
-  if(!exists(currency, where=FinancialInstrument:::.instrument,inherits=TRUE)) {
+  if(!exists(currency, where=.instrument,inherits=TRUE)) {
     warning(paste("currency",currency,"not found")) # assumes that we know where to look
   }
   if(!exists(counter_currency, 
-    where=FinancialInstrument:::.instrument,inherits=TRUE)) {
+    where=.instrument,inherits=TRUE)) {
         warning(paste("counter_currency",counter_currency,"not found")) # assumes that we know where to look
   }
 
@@ -819,9 +937,13 @@ exchange_rate <- function (primary_id = NULL, currency = NULL,
 #' @export
 #' @rdname instrument
 bond <- function(primary_id, currency, multiplier, tick_size=NULL, 
-                 identifiers = NULL, assign_i=TRUE, ...){
+                 identifiers = NULL, assign_i=TRUE, overwrite=TRUE, ...){
     if (missing(currency)) stop ("'currency' is a required argument")
     if (length(primary_id) > 1) stop("'primary_id' must be of length 1 for this function")
+    if (!isTRUE(overwrite) && isTRUE(assign_i) && primary_id %in% ls_instruments()) {
+        stop("overwrite is FALSE and the primary_id ", sQuote(primary_id), 
+             " is already in use.")
+    }
     instrument(primary_id=primary_id, currency=currency, multiplier=multiplier, 
                tick_size=tick_size, identifiers = identifiers, ..., type="bond", 
                assign_i=assign_i )
@@ -849,7 +971,7 @@ bond_series <- function(primary_id , suffix_id, ..., first_traded=NULL,
         temp_series$first_traded<-c(temp_series$first_traded,first_traded)
         temp_series$maturity<-c(temp_series$maturity,maturity)
         assign(id, temp_series, 
-               envir=as.environment(FinancialInstrument:::.instrument))
+               envir=as.environment(.instrument))
     } else {
         dargs<-list(...)
         dargs$currency=NULL
@@ -938,7 +1060,8 @@ bond_series <- function(primary_id , suffix_id, ..., first_traded=NULL,
 #' }
 #' @export
 instrument.auto <- function(primary_id, currency=NULL, multiplier=1, silent=FALSE, 
-                            default_type='unknown', root=NULL, assign_i=TRUE, ...) {
+                            default_type='unknown', root=NULL, assign_i=TRUE, 
+                            ...) {
 ##TODO: check formals against dots and remove duplicates from dots before calling constructors to avoid
 # 'formal argument "multiplier" matched by multiple actual arguments'
     if (!is.null(currency) && !is.currency.name(currency)) {
@@ -1175,12 +1298,12 @@ instrument.auto <- function(primary_id, currency=NULL, multiplier=1, silent=FALS
 #' @export
 #' @rdname getInstrument
 getInstrument <- function(x, Dates=NULL, silent=FALSE, type='instrument'){
-    tmp_instr <- try(get(x,pos=FinancialInstrument:::.instrument),silent=TRUE)
+    tmp_instr <- try(get(x,pos=.instrument),silent=TRUE)
     if(inherits(tmp_instr,"try-error") || !inherits(tmp_instr, type)){
         xx <- make.names(x)
         ## First, look to see if x matches any identifiers.
         # unlist all instruments into a big named vector
-        ul.instr <- unlist(as.list(FinancialInstrument:::.instrument, 
+        ul.instr <- unlist(as.list(.instrument, 
                                    all.names=TRUE))
         # subset by names that include "identifiers"
         ul.ident <- ul.instr[grep('identifiers', names(ul.instr))]
@@ -1191,7 +1314,7 @@ getInstrument <- function(x, Dates=NULL, silent=FALSE, type='instrument'){
         if (length(tmpname) > 0) {
             #primary_id is everything before .identifiers
             id <- gsub("\\.identifiers.*", "", names(tmpname))
-            tmp_instr <- try(get(id, pos=FinancialInstrument:::.instrument), 
+            tmp_instr <- try(get(id, pos=.instrument), 
                              silent=TRUE)
             if (inherits(tmp_instr, type)) {
                 #&& (x %in% tmp_instr$identifiers || x %in% make.names(tmp_instr$identifiers))
@@ -1203,14 +1326,14 @@ getInstrument <- function(x, Dates=NULL, silent=FALSE, type='instrument'){
         # to the beginning of id.
         char.x <- strsplit(x, "")[[1]] # split x into vector of characters
         x <- substr(x, grep("[^\\.]", char.x)[1], length(char.x)) # excluding leading dots
-        tmp_instr<-try(get(x,pos=FinancialInstrument:::.instrument),silent=TRUE)
+        tmp_instr<-try(get(x,pos=.instrument),silent=TRUE)
         if(!inherits(tmp_instr,type)) {
             tmp_instr<-try(get(paste(".",x,sep=""),
-                               pos=FinancialInstrument:::.instrument),
+                               pos=.instrument),
                            silent=TRUE)
             if(!inherits(tmp_instr,type)) {
                 tmp_instr<-try(get(paste("..",x,sep=""),
-                                   pos=FinancialInstrument:::.instrument),
+                                   pos=.instrument),
                                silent=TRUE)
             }
         }
@@ -1279,7 +1402,7 @@ instrument_attr <- function(primary_id, attr, value, ...) {
     if (inherits(instr, 'try-error') || !is.instrument(instr))
         stop(paste('instrument ',primary_id,' must be defined first.',sep=''))
     if (attr == 'primary_id') {
-        rm(list = primary_id, pos = FinancialInstrument:::.instrument)
+        rm(list = primary_id, pos = .instrument)
     } else if (attr == 'currency') {
         if (!is.currency.name(value)) {
             stop("currency ", value, " must be an object of type 'currency'")
@@ -1317,7 +1440,7 @@ instrument_attr <- function(primary_id, attr, value, ...) {
         }
     }
     instr[[attr]] <- value
-    assign(instr$primary_id, instr, pos=FinancialInstrument:::.instrument)
+    assign(instr$primary_id, instr, pos=.instrument)
 }
 
 
@@ -1397,10 +1520,9 @@ add.defined.by <- function(primary_ids, ...) {
 
 #' instrument class print method
 #' 
-#' @method print instrument
-#' @S3method print instrument
 #' @author Joshua Ulrich, Garrett See
 #' @keywords internal
+#' @export
 print.instrument <- function(x, ...) {
   str(unclass(x), comp.str="", no.list=TRUE, give.head=FALSE,
     give.length=FALSE, give.attr=FALSE, nest.lev=-1, indent.str="")
@@ -1409,10 +1531,9 @@ print.instrument <- function(x, ...) {
 
 #' instrument class sort method
 #' 
-#' @method sort instrument
-#' @S3method sort instrument
 #' @author Garrett See
 #' @keywords internal
+#' @export
 sort.instrument <- function(x, decreasing=FALSE, na.last=NA, ...) {
     anchored <- x[c("primary_id", "currency", "multiplier", "tick_size", 
                   "identifiers", "type")] 

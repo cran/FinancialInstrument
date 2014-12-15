@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: saveInstruments.R 1039 2012-06-03 23:50:43Z gsee $
+# $Id: saveInstruments.R 1619 2014-07-08 13:50:56Z signori $
 #
 ###############################################################################
 
@@ -39,6 +39,7 @@
 #' As an experimental feature, a \code{list} or \code{environment} can be passed 
 #' to \code{file_name}.
 #' @param dir Directory of file (defaults to current working directory. ie. "")
+#' @param compress argument passed to \code{\link{save}}, default is "gzip"
 #' @return Called for side-effect
 #' @author Garrett See
 #' @seealso save, load load.instrument define_stocks, define_futures,
@@ -59,10 +60,9 @@
 #' }
 #' @export 
 #' @rdname saveInstruments
-saveInstruments <- function(file_name="MyInstruments", dir="") {
+saveInstruments <- function(file_name="MyInstruments", dir="", compress="gzip") {
 	if (!is.null(dir) && !dir == "" && substr(dir,nchar(dir),nchar(dir)) != "/")
 		dir <- paste(dir,"/",sep="")
-    .instrument <- FinancialInstrument:::.instrument
     ssfn <- strsplit(file_name, "\\.")[[1]]
 	extension <- if (tolower(tail(ssfn, 1)) %in% c('rda', 'rdata', 'r', 'txt')) {
         file_name <- paste(ssfn[1:(length(ssfn)-1)], collapse=".")
@@ -82,7 +82,7 @@ saveInstruments <- function(file_name="MyInstruments", dir="") {
             sink()
             #system(paste("cat", file.name)) #for debugging    
         }
-    } else save(.instrument, file = file.name)	
+    } else save(.instrument, file = file.name, compress=compress)	
 }
 
 
@@ -92,9 +92,13 @@ loadInstruments <-function(file_name="MyInstruments", dir="") {
     require("utils")
     if (is.environment(file_name) || is.list(file_name)) {
         ilist <- as.list(file_name)
+        if (!all(vapply(ilist, function(x) length(x[["primary_id"]]) == 1L, 
+                        TRUE))) {
+            stop("all instruments must have exactly one primary_id")
+        }
         for (i in seq_along(ilist)) {
-            assign(names(ilist)[i], ilist[[i]],
-                    pos=FinancialInstrument:::.instrument)
+            assign(ilist[[i]][["primary_id"]], ilist[[i]],
+                   pos=.instrument)
         }
         return(invisible(NULL))
 	}
@@ -117,7 +121,7 @@ loadInstruments <-function(file_name="MyInstruments", dir="") {
         il <- ls(tmpenv$.instrument, all.names=TRUE)
         for (i in il) {
              assign(i, tmpenv$.instrument[[i]], 
-                    pos=FinancialInstrument:::.instrument, inherits=FALSE)
+                    pos=.instrument, inherits=FALSE)
         }
     }
 }

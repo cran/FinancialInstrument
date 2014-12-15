@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: update_instruments.yahoo.R 1159 2012-09-06 01:17:54Z gsee $
+# $Id: update_instruments.yahoo.R 1638 2014-10-08 03:43:16Z gsee $
 #
 ###############################################################################
 
@@ -76,7 +76,7 @@ update_instruments.yahoo <- function(Symbols=c('stocks','all'), verbose=FALSE ) 
     yahoo.syms <- paste(yahoo.syms, collapse=";")
 	if (is.null(yahoo.syms) || length(yahoo.syms) == 0) 
         stop('error with symbol names; no Symbols supplied?')
-    yahooStuff <- quantmod:::getQuote.yahoo(yahoo.syms,
+    yahooStuff <- getQuote(yahoo.syms, src="yahoo",
 					  what=yahooQF(c("Name", 
                         "Stock Exchange",
 					    "Market Capitalization",
@@ -118,7 +118,7 @@ update_instruments.yahoo <- function(Symbols=c('stocks','all'), verbose=FALSE ) 
 			instr$defined.by=db 
 		    instr$updated=Sys.time()
             
-		    assign(Symbols[i], instr, pos=FinancialInstrument:::.instrument)
+		    assign(Symbols[i], instr, pos=.instrument)
 		}
     }        
     Symbols
@@ -379,7 +379,7 @@ update_instruments.instrument <- function(Symbols, source_id, create.new=FALSE,
     if (isTRUE(assign_i)) {
         invisible(lapply(out, function(x) {
             if (!is.null(x)) assign(x$primary_id, x, 
-                                    pos=FinancialInstrument:::.instrument)
+                                    pos=.instrument)
         }))
     } else return(out)
     do.call(c, lapply(out, "[[", "primary_id"))

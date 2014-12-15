@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: ls_underlyings.R 899 2012-01-01 19:00:09Z gsee $
+# $Id: ls_underlyings.R 1498 2013-08-25 00:26:39Z gsee $
 #
 ###############################################################################
 
@@ -38,7 +38,7 @@ ls_underlyings <- function(pattern=NULL, match=TRUE) {
     symbols <- ls_derivatives(pattern, match)
     tmp_symbols <- NULL
     for (symbol in symbols) {
-        tmp_instr <- try(get(symbol,pos=FinancialInstrument:::.instrument),silent=TRUE)
+        tmp_instr <- try(get(symbol,pos=.instrument),silent=TRUE)
         #if (is.instrument(tmp_instr))  
         if (!is.null(tmp_instr$underlying_id)) 
             tmp_symbols <- c(tmp_symbols,tmp_instr$underlying_id)

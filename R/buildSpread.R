@@ -23,7 +23,8 @@
 #' @param prefer Price column to use to build structure.
 #' @param auto.assign Assign the spread? If FALSE, the xts object will be 
 #'   returned.
-#' @param env Environment in which to assign spread data.
+#' @param env Environment holding data for members as well as where spread data
+#'   will be assigned.
 #' @return If \code{auto.assign} is FALSE, a univariate xts object. 
 #'   Otherwise, the xts object will be assigned to \code{spread_id} and the 
 #'   \code{spread_id} will be returned.
@@ -47,10 +48,8 @@
 #' }
 #' @rdname buildSpread
 #' @export
-buildSpread <- function(spread_id, Dates = NULL, onelot=TRUE, prefer = NULL, auto.assign=TRUE, env=.GlobalEnv) #overwrite=FALSE
-{
-    has.Mid <- quantmod:::has.Mid #FIXME: this should be exported from quatmod
-    
+buildSpread <- function(spread_id, Dates = NULL, onelot=TRUE, prefer = NULL, 
+                        auto.assign=TRUE, env=.GlobalEnv) {
     spread_instr <- try(getInstrument(spread_id))
     if (inherits(spread_instr, "try-error") | !is.instrument(spread_instr)) {
         stop(paste("Instrument", spread_instr, " not found, please create it first."))
@@ -71,24 +70,24 @@ buildSpread <- function(spread_id, Dates = NULL, onelot=TRUE, prefer = NULL, aut
       to <- times$last.time
     }
     spreadseries <- NULL
-    for (i in 1:length(spread_instr$members)) {
+    for (i in seq_len(length(spread_instr$members))) {
         instr <- try(getInstrument(as.character(spread_instr$members[i])))
         if (inherits(instr, "try-error") || !is.instrument(instr)) 
             stop(paste("Instrument", spread_instr$members[i], " not found, please create it first."))
         instr_currency <- instr$currency
         instr_mult <- as.numeric(instr$multiplier)
         instr_ratio <- spread_instr$memberratio[i]
-        instr_prices <- try(get(as.character(spread_instr$members[i]),envir=.GlobalEnv),silent=TRUE)
-        # If we were able to find instr_prices in .GlobalEnv, check to make sure there is data between from and to.
-        #if we couldn't find it in .GlobalEnv or there's no data between from and to, getSymbols
+        instr_prices <- try(get(as.character(spread_instr$members[i]),envir=env),silent=TRUE)
+        # If we were able to find instr_prices in env, check to make sure there is data between from and to.
+        #if we couldn't find it in env or there's no data between from and to, getSymbols
         if (inherits(instr_prices, "try-error") || length(instr_prices) < 2 || (!is.null(Dates) && length(instr_prices[Dates]) == 0)) {
             if (is.null(Dates)) {
-                warning(paste(spread_instr$members[i],"not found in .GlobalEnv, and no Dates supplied. Trying getSymbols defaults.") )
+                warning(paste(spread_instr$members[i],"not found in 'env', and no Dates supplied. Trying getSymbols defaults.") )
                 instr_prices <- getSymbols(as.character(spread_instr$members[i]),auto.assign=FALSE)
                 from <- first(index(instr_prices))
                 to <- last(index(instr_prices))
             } else {
-                warning(paste('Requested data for', spread_instr$members[i], 'not found in .GlobalEnv. Trying getSymbols.'))
+                warning(paste("Requested data for", spread_instr$members[i], "not found in 'env'. Trying getSymbols."))
                 instr_prices <- getSymbols(as.character(spread_instr$members[i]), from = from, to = to, auto.assign=FALSE)
             }
         }
@@ -218,10 +217,13 @@ buildBasket <- buildSpread
 #' stock("SPY", "USD")
 #' stock("DIA", "USD")
 #' getSymbols(c("SPY","DIA"))
-#' fSB <- fn_SpreadBuilder("SPY","DIA") #can call with names of instrument/xts ojects
+#' 
+#' #can call with names of instrument/xts ojects
+#' fSB <- fn_SpreadBuilder("SPY","DIA") 
 #' fSB2 <- fn_SpreadBuilder(SPY,DIA) # or you can pass xts objects
 #'
-#' fSB3 <- fn_SpreadBuilder("SPY","DIA",1.1) #assuming you first somehow calculated the ratio to be a constant 1.1
+#' #assuming you first somehow calculated the ratio to be a constant 1.1
+#' fSB3 <- fn_SpreadBuilder("SPY","DIA",1.1) 
 #' head(fSB)
 #'
 #' # Call fn_SpreadBuilder with vector of 2 instrument names
@@ -513,6 +515,6 @@ formatSpreadPrice <- function(x,multiplier=1,tick_size=0.01) {
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: buildSpread.R 1137 2012-08-27 18:41:07Z gsee $
+# $Id: buildSpread.R 1638 2014-10-08 03:43:16Z gsee $
 #
 ###############################################################################
