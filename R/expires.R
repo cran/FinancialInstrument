@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: expires.R 1655 2014-11-23 22:53:26Z gsee $
+# $Id$
 #
 ###############################################################################
 

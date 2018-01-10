@@ -10,7 +10,7 @@
 #' The correct values will vary based on your data source.
 #'
 #' TODO add more flexibility in input formats for \code{roots}
-#' #' @param yearlist vector of year suffixes to be applied, see Details
+#' @param yearlist vector of year suffixes to be applied, see Details
 #' @param roots data.frame containing at least columns \code{primary_id} and \code{month_cycle}, see Details
 #' @author Brian G. Peterson
 #' @seealso \code{\link{load.instruments}}
@@ -203,7 +203,7 @@ build_spread_symbols <- function(data=NULL,file=NULL,outputfile=NULL,start_date=
 # This code is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: build_symbols.R 1638 2014-10-08 03:43:16Z gsee $
+# $Id$
 #
 ###############################################################################
 

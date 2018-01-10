@@ -1,3 +1,30 @@
+Changes in Version 1.3.1
+======================
+
+USER VISIBLE CHANGES
+--------------------
+
+* move never-exported splice and splooth functions by Robert Sams to the 
+  github sandbox, removing them from the package
+  
+* add Authors@R field for CRAN compliance
+
+Changes in Version 1.3.0
+======================
+
+USER VISIBLE CHANGES
+--------------------
+
+* Ross Bennett is taking over as the Maintainer from Garrett See.
+  The development team would like to thank Garrett for his years of 
+  stewardship.
+
+* getSymbols.FI can now take a vector if identifiers in the "use_identifier"
+  argument.  
+  
+* removed Suggests for archived package 'its'
+
+
 Changes in Version 1.2
 ======================
 

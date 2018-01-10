@@ -23,6 +23,6 @@ volep <- function (x, units){
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: volep.R 899 2012-01-01 19:00:09Z gsee $
+# $Id$
 #
 ###############################################################################

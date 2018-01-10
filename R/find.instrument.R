@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: find.instrument.R 1092 2012-06-30 00:06:09Z gsee $
+# $Id$
 #
 ###############################################################################
 

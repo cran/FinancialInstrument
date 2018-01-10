@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: buildHierarchy.R 963 2012-03-04 21:01:36Z gsee $
+# $Id$
 #
 ###############################################################################
 

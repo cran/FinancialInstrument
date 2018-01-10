@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: format_id.R 1406 2013-03-03 16:14:56Z gsee $
+# $Id$
 #
 ###############################################################################
 

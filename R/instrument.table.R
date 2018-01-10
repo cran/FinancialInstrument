@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: instrument.table.R 949 2012-02-29 14:31:10Z gsee $
+# $Id$
 #
 ###############################################################################
 

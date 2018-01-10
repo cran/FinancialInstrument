@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: saveSymbols.R 1088 2012-06-28 16:15:59Z gsee $
+# $Id$
 #
 ###############################################################################
 

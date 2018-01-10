@@ -790,7 +790,7 @@ FEreut2xts <- function(.TRTH) {
 # This code is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: TRTH_BackFill.R 944 2012-02-23 17:21:32Z gsee $
+# $Id$
 #
 ###############################################################################
 

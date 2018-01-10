@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: saveInstruments.R 1619 2014-07-08 13:50:56Z signori $
+# $Id$
 #
 ###############################################################################
 
@@ -89,7 +89,6 @@ saveInstruments <- function(file_name="MyInstruments", dir="", compress="gzip") 
 #' @export
 #' @rdname saveInstruments
 loadInstruments <-function(file_name="MyInstruments", dir="") {
-    require("utils")
     if (is.environment(file_name) || is.list(file_name)) {
         ilist <- as.list(file_name)
         if (!all(vapply(ilist, function(x) length(x[["primary_id"]]) == 1L, 

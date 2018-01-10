@@ -8,7 +8,7 @@
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: ls_instruments_by.R 1498 2013-08-25 00:26:39Z gsee $
+# $Id$
 #
 ###############################################################################
 

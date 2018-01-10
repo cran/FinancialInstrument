@@ -1,15 +1,14 @@
-
+#' @importFrom methods hasArg
+#' @importFrom stats as.ts end na.omit start
+#' @importFrom utils download.file read.csv read.delim str tail write.csv
 
 #' @importFrom quantmod getQuote is.HLC is.OHLC OHLC is.BBO has.Bid has.Ask 
 #'  has.Op has.Ad has.Trade has.Price getPrice Op Cl Ad has.Cl getSymbols   
 #'  getSymbolLookup setSymbolLookup yahooQF has.Vo Vo getOptionChain
+#'  importDefaults
 #' @importFrom TTR stockSymbols runSum
 #' @importFrom zoo na.locf as.zoo coredata is.zoo index
-#' @importFrom quantmod importDefaults
 NULL
-
-# for packages in Suggests:
-globalVariables(c("timeSeries", "readHTMLTable", "%dopar%", "foreach"))
 
 #' Construct, manage and store contract specifications for trading
 #'
@@ -124,7 +123,7 @@ globalVariables(c("timeSeries", "readHTMLTable", "%dopar%", "foreach"))
 #' \code{\link[xts:xts-package]{xts}},
 #' \code{\link[quantmod:quantmod-package]{quantmod}},
 #' \href{https://r-forge.r-project.org/R/?group_id=316}{blotter},
-#' \href{http://cran.r-project.org/web/packages/PerformanceAnalytics/index.html}{PerformanceAnalytics},
+#' \href{https://cran.r-project.org/package=PerformanceAnalytics}{PerformanceAnalytics},
 #' \href{https://r-forge.r-project.org/R/?group_id=1113}{qmao, and twsInstrument}
 #' 
 #' @examples
@@ -294,22 +293,20 @@ convert.time.series <- function (fr, return.class) {
         fr <- as.data.frame(fr)
         return(fr)
     }
-    else if ("its" %in% return.class) {
-        if ("package:its" %in% search() || suppressMessages(require("its", 
-            quietly = TRUE))) {
-            fr.dates <- as.POSIXct(as.character(index(fr)))
-            fr <- its::its(coredata(fr), fr.dates)
-            return(fr)
-        }
-        else {
-            warning(paste("'its' from package 'its' could not be loaded:", 
-                " 'xts' class returned"))
-        }
-    }
+    # else if ("its" %in% return.class) {
+    #     if (requireNamespace("its", quietly = TRUE)) {
+    #         fr.dates <- as.POSIXct(as.character(index(fr)))
+    #         fr <- its::its(coredata(fr), fr.dates)
+    #         return(fr)
+    #     }
+    #     else {
+    #         warning(paste("'its' from package 'its' could not be loaded:", 
+    #             " 'xts' class returned"))
+    #     }
+    # }
     else if ("timeSeries" %in% return.class) {
-        if ("package:timeSeries" %in% search() || suppressMessages(require("timeSeries", 
-            quietly = TRUE))) {
-            fr <- timeSeries(coredata(fr), charvec = as.character(index(fr)))
+        if (requireNamespace("timeSeries", quietly = TRUE)) {
+            fr <- timeSeries::timeSeries(coredata(fr), charvec = as.character(index(fr)))
             return(fr)
         }
         else {

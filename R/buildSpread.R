@@ -515,6 +515,6 @@ formatSpreadPrice <- function(x,multiplier=1,tick_size=0.01) {
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
 #
-# $Id: buildSpread.R 1638 2014-10-08 03:43:16Z gsee $
+# $Id$
 #
 ###############################################################################
